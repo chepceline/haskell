@@ -1,60 +1,80 @@
-data PropLogic = Literal Char 
-               | Not PropLogic 
-               | Conj PropLogic PropLogic 
-               | Disj PropLogic PropLogic 
-               | Implies PropLogic PropLogic 
-               | Equiv PropLogic PropLogic 
-               | Xor PropLogic PropLogic
- 
--- read the input string and convert it to a PropLogic expression
-readPropLogic :: String -> PropLogic
-readPropLogic = fst . head . foldl toPropLogic ([], [])
-  where
-    toPropLogic (stack@(s:ss), ls) (x:xs)
-      | x == 'P' = (Literal x : stack, ls)
-      | x == 'N' = (Not s : ss, ls)
-      | x == 'K' = (Conj s (head ss) : (tail ss), ls)
-      | x == 'A' = (Implies (head ss) s : (tail ss), ls)
-      | x == 'E' = (Equiv (head ss) s : (tail ss), ls)
-      | x == 'J' = (Xor (head ss) s : (tail ss), ls)
-      | x == 'D' = (Disj (head ss) s : (tail ss), ls)
-    toPropLogic (stack, ls) (x:xs) = (stack, x:xs:ls)
- 
--- convert a PropLogic expression to negation normal form
-nnf :: PropLogic -> PropLogic
-nnf (Literal x) = Literal x
-nnf (Not (Literal x)) = Not (Literal x)
-nnf (Not (Not p)) = nnf p
-nnf (Conj p q) = Conj (nnf p) (nnf q)
-nnf (Disj p q) = Disj (nnf p) (nnf q)
-nnf (Implies p q) = Disj (nnf (Not p)) (nnf q)
-nnf (Equiv p q) = Conj (Disj (nnf p) (nnf (Not q))) (Disj (nnf (Not p)) (nnf q))
-nnf (Xor p q) = Disj (Conj (nnf p) (nnf (Not q))) (Conj (nnf (Not p)) (nnf q))
- 
--- convert a PropLogic expression in negation normal form to conjunctive normal form
-cnf :: PropLogic -> PropLogic
-cnf (Literal x) = Literal x
-cnf (Not (Literal x)) = Not (Literal x)
-cnf (Conj p q) = Conj (cnf p) (cnf q)
-cnf (Disj p q) = Disj (cnf p) (cnf q)
-cnf (Not (Conj p q)) = Disj (cnf (Not p)) (cnf (Not q))
-cnf (Not (Disj p q)) = Conj (cnf (Not p)) (cnf (Not q))
- 
--- determine if a propositional formula in conjunctive normal form is a tautology
-isTautology :: PropLogic -> Bool
-isTautology (Literal x) = False
-isTautology (Not (Literal x)) = False
-isTautology (Conj p q) = isTautology p && isTautology q
-isTautology (Disj p q) = isTautology p || isTautology q
-isTautology (Not p) = False
- 
--- main function to do the computation
+import Data.List
+
+-- This function takes in a postfix expression as a string and returns the expression in disjunction normal form
+dnf :: String -> String
+dnf expr = helper expr []
+  where 
+    helper [] stack = if length stack == 1 then head stack else concat (intersperse " v " stack)
+    helper (x:xs) stack = case x of 
+                            'A' -> helper xs (concat (intersperse " v " (operate 'A' (take 2 stack) : drop 2 stack))
+                            'C' -> helper xs (concat (intersperse " v " (operate 'C' (take 2 stack) : drop 2 stack))
+                            'D' -> helper xs (concat (intersperse " v " (operate 'D' (take 2 stack) : drop 2 stack))
+                            'E' -> helper xs (concat (intersperse " v " (operate 'E' (take 2 stack) : drop 2 stack))
+                            'J' -> helper xs (concat (intersperse " v " (operate 'J' (take 2 stack) : drop 2 stack))
+                            'K' -> helper xs (concat (intersperse " v " (operate 'K' (take 2 stack) : drop 2 stack))
+                            'N' -> helper xs (concat (intersperse " v " (operate 'N' (take 1 stack) : drop 1 stack))
+                            'X' -> helper xs (concat (intersperse " v " (operate 'X' (take 2 stack) : drop 2 stack))
+                            _   -> helper xs (x:stack)
+
+-- This function takes in a postfix expression as a string and returns the expression in conjunction normal form
+cnf :: String -> String
+cnf expr = helper expr []
+  where 
+    helper [] stack = if length stack == 1 then head stack else concat (intersperse " & " stack)
+    helper (x:xs) stack = case x of 
+                            'A' -> helper xs (concat (intersperse " & " (operate 'A' (take 2 stack) : drop 2 stack))
+                            'C' -> helper xs (concat (intersperse " & " (operate 'C' (take 2 stack) : drop 2 stack))
+                            'D' -> helper xs (concat (intersperse " & " (operate 'D' (take 2 stack) : drop 2 stack))
+                            'E' -> helper xs (concat (intersperse " & " (operate 'E' (take 2 stack) : drop 2 stack))
+                            'J' -> helper xs (concat (intersperse " & " (operate 'J' (take 2 stack) : drop 2 stack))
+                            'K' -> helper xs (concat (intersperse " & " (operate 'K' (take 2 stack) : drop 2 stack))
+                            'N' -> helper xs (concat (intersperse " & " (operate 'N' (take 1 stack) : drop 1 stack))
+                            'X' -> helper xs (concat (intersperse " & " (operate 'X' (take 2 stack) : drop 2 stack))
+                            _   -> helper xs (x:stack)
+
+-- This function takes in a postfix expression as a string and returns the expression in algebraic normal form
+anf :: String -> String
+anf expr = helper expr []
+  where 
+    helper [] stack = if length stack == 1 then head stack else concat (intersperse " + " stack)
+    helper (x:xs) stack = case x of 
+                            'A' -> helper xs (concat (intersperse " + " (operate 'A' (take 2 stack) : drop 2 stack))
+                            'C' -> helper xs (concat (intersperse " + " (operate 'C' (take 2 stack) : drop 2 stack))
+                            'D' -> helper xs (concat (intersperse " + " (operate 'D' (take 2 stack) : drop 2 stack))
+                            'E' -> helper xs (concat (intersperse " + " (operate 'E' (take 2 stack) : drop 2 stack))
+                            'J' -> helper xs (concat (intersperse " + " (operate 'J' (take 2 stack) : drop 2 stack))
+                            'K' -> helper xs (concat (intersperse " + " (operate 'K' (take 2 stack) : drop 2 stack))
+                            'N' -> helper xs (concat (intersperse " + " (operate 'N' (take 1 stack) : drop 1 stack))
+                            'X' -> helper xs (concat (intersperse " + " (operate 'X' (take 2 stack) : drop 2 stack))
+                            _   -> helper xs (x:stack)
+
+-- This function takes in an operator and two strings and returns a string representing the expression
+-- with the operator applied to the two strings
+operate :: Char -> [String] -> String
+operate op [x, y] = case op of 
+                      'A' ->  "(" ++ x ++ " v " ++ y ++ ")"
+                      'C' ->  "(" ++ x ++ " => " ++ y ++ ")"
+                      'D' ->  "(" ++ x ++ " | " ++ y ++ ")"
+                      'E' ->  "(" ++ x ++ " <=> " ++ y ++ ")"
+                      'J' ->  "(" ++ x ++ " + " ++ y ++ ")"
+                      'K' ->  "(" ++ x ++ " & " ++ y ++ ")"
+                      'X' ->  "(" ++ x ++ " x " ++ y ++ ")"
+                      'N' ->  "(~" ++ x ++ ")"
+
 main :: IO ()
-main = do
-  input <- getLine
-  let expr = readPropLogic input
-  let nnfExpr = nnf expr
-  let cnfExpr = cnf nnfExpr
-  let result = isTautology cnfExpr
-  putStrLn $ show result ++ " " ++ show cnfExpr
-  main
+main = do 
+    input <- getLine
+    let dnf_expr = dnf input
+    let cnf_expr = cnf input
+    let anf_expr = anf input
+    putStrLn input
+    putStrLn dnf_expr
+    putStrLn cnf_expr
+    putStrLn anf_expr
+    putStrLn "*"
+    main
+    return ()
+
+-- This program takes in a postfix expression and outputs the expression in disjunction normal form, conjunction normal form and algebraic normal form. It uses a helper function, operate, which takes in an operator and two strings and returns a string representing the expression with the operator applied to the two strings.
+
+-- The main function reads the input from the standard input stream, then calls the dnf, cnf and anf functions to get the expressions in the different normal forms. It then prints out the input expression and the expressions in the different normal forms and prints a * after each set of four lines. It then recursively calls itself to get the next input expression.
